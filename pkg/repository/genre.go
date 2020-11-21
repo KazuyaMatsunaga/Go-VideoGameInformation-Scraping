@@ -43,7 +43,7 @@ func GenreScrape(URL string) (PutData, []error) {
 	selection.Each(func(i int, s *goquery.Selection) {
 		genreStrong := s.Find("strong").Text()
 		if genreStrong == "" {
-			errorList = append(errorList, fmt.Errorf("name not found at %v column %v", URL, i))
+			errorList = append(errorList, fmt.Errorf("<strong> not found at %v column %v", URL, i))
 			return
 		}
 		genreSel = s.Find("td[style]")

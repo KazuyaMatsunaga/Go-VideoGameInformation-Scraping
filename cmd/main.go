@@ -20,5 +20,9 @@ func main() {
 		repo := repository.NewGenreClient()
 		s := service.NewGenreService(repo)
 		fmt.Printf("%v\n", s.Genre())
+	case "platform":
+		repo := repository.NewPlatformClient()
+		s := service.NewPlatformService(repo)
+		fmt.Printf("%v\n", s.Platform())
 	}
 }
