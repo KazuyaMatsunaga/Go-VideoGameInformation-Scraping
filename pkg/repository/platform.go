@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/KazuyaMatsunaga/Go-VideoGameInformation-Scraping/pkg/model"
 )
 
 type PlatformClient struct{}
@@ -14,21 +15,23 @@ func NewPlatformClient() ScrapingRepository {
 }
 
 // Scrape ゲームプラットフォームの情報をスクレイピング
-func (c *PlatformClient) Scrape(i interface{}) (PutData, []error) {
-	result := make(map[string]interface{})
+func (c *PlatformClient) Scrape(i interface{}) (interface{}, []error) {
+	var results interface{}
 	errorList := make([]error, 0)
 	
 	switch i.(type) {
 		case string:
-			result, errorList = PlatformScrape(i.(string))
-			return result, errorList
+			results, errorList = PlatformScrape(i.(string))
+			return results, errorList
 		default:
 			return nil, errorList
 	}
 }
 
-func PlatformScrape(URL string) (PutData, []error) {
-	result := make(map[string]interface{})
+func PlatformScrape(URL string) (interface{}, []error) {
+	var results interface{}
+	results = make([]model.Platform, 0)
+	result := model.Platform{}
 	errorList := make([]error, 0)
 
 	doc, err := goquery.NewDocument(URL)
@@ -63,8 +66,11 @@ func PlatformScrape(URL string) (PutData, []error) {
 		pfName = strings.Replace(pfName," ","",-1)
 		pfDate := strings.Replace(pfTds[i+2].FirstChild.Data,"\n","",-1)
 		pfDate = strings.Replace(pfDate," ","",-1)
-		result[pfAddr] = pfName + "/" + pfDate
+		result.Addr = pfAddr
+		result.Name = pfName
+		result.ReleaseDate = pfDate
+		results = append(results.([]model.Platform), result)
 	}
 
-	return result, errorList
+	return results, errorList
 }

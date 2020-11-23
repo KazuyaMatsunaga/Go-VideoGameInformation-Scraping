@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/KazuyaMatsunaga/Go-VideoGameInformation-Scraping/pkg/model"
 )
 
 type GenreClient struct{}
@@ -14,21 +15,23 @@ func NewGenreClient() ScrapingRepository {
 }
 
 // Scrape ゲームジャンルの情報をスクレイピング
-func (c *GenreClient) Scrape(i interface{}) (PutData, []error) {
-	result := make(map[string]interface{})
+func (c *GenreClient) Scrape(i interface{}) (interface{}, []error) {
+	var results interface{}
 	errorList := make([]error, 0)
 	
 	switch i.(type) {
 		case string:
-			result, errorList = GenreScrape(i.(string))
-			return result, errorList
+			results, errorList = GenreScrape(i.(string))
+			return results, errorList
 		default:
 			return nil, errorList
 	}
 }
 
-func GenreScrape(URL string) (PutData, []error) {
-	result := make(map[string]interface{})
+func GenreScrape(URL string) (interface{}, []error) {
+	var results interface{}
+	results = make([]model.Genre, 0)
+	result := model.Genre{}
 	errorList := make([]error, 0)
 
 	doc, err := goquery.NewDocument(URL)
@@ -53,14 +56,16 @@ func GenreScrape(URL string) (PutData, []error) {
 		genreAbbr := s.Text()
 		genreAbbr = strings.Replace(genreAbbr,"\n","",-1) // 改行を取り除く
 		if (genreAbbr != "基本のジャンル") && (genreAbbr != "派生・複合ジャンルなど") && (genreAbbr != "◯◯/◯◯") {
-			result[genreAbbr] = strings.Replace(s.Next().Text(),"\n","",-1)
+			result.Addr = genreAbbr
+			result.Name = strings.Replace(s.Next().Text(),"\n","",-1)
 			
 			// RTS:リアルタイムストラテジー(*2) 用
-			if c := strings.Contains(result[genreAbbr].(string),"(*2)"); c {
-				result[genreAbbr] = strings.Replace(result[genreAbbr].(string),"(*2)","",-1) // (*2)を取り除く
+			if c := strings.Contains(result.Name,"(*2)"); c {
+				result.Name = strings.Replace(result.Name,"(*2)","",-1) // (*2)を取り除く
 			}
+			results = append(results.([]model.Genre), result)
 		}
 	})
 
-	return result, errorList
+	return results, errorList
 }

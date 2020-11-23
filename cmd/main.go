@@ -24,5 +24,9 @@ func main() {
 		repo := repository.NewPlatformClient()
 		s := service.NewPlatformService(repo)
 		fmt.Printf("%v\n", s.Platform())
+	case "detail":
+		repo := repository.NewDetailClient()
+		s := service.NewDetailService(repo)
+		fmt.Printf("%v\n", s.Detail())
 	}
 }
