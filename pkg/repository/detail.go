@@ -3,7 +3,9 @@ package repository
 import (
 	"fmt"
 	"strings"
+	"regexp"
 	"sync"
+	"strconv"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/KazuyaMatsunaga/Go-VideoGameInformation-Scraping/pkg/model"
@@ -58,7 +60,6 @@ func DetailScrape(URLs map[string]string) (interface{}, []error) {
 		for {
 			select{
 			case result := <- resultCh:
-				fmt.Printf("result : %v\n", result)
 				if b,i := titleContains(results.([]model.Detail), result.Title); b {
 					results.([]model.Detail)[i].Platform = append(results.([]model.Detail)[i].Platform, result.Platform[0])
 				} else {
@@ -123,20 +124,28 @@ func RunScrape(limitCh chan struct{}, wg *sync.WaitGroup, k string, u string, re
 		}
 		detailDoc.Find("h2[id]").Each(func(_ int, sd * goquery.Selection) {
 			var detailTable *goquery.Selection
-			if strings.Replace(sd.Text(),"\n","",-1) == result.Title {
+			if strings.Replace(sd.Text(),"\n","",-1) == result.Title && result.Title == "ペルソナ5" {
 				detailTable = sd.Next().Next()
 			} else {
 				return
 			}
+
+			detailTable = detailTable.Find("table")
 			detailTable.Find("td").Each(func(_ int, sdt * goquery.Selection) {
-				if strings.Replace(sdt.Text(),"\n","",-1) == "定価" {
+				if strings.Replace(sdt.Text(),"\n","",-1) == "定価" || strings.Replace(sdt.Text(),"\n","",-1) == "定価(税込)" || strings.Replace(sdt.Text(),"\n","",-1) == "定価(税抜)" || strings.Replace(sdt.Text(),"\n","",-1) == "価格" || strings.Replace(sdt.Text(),"\n","",-1) == "価格(税込)" || strings.Replace(sdt.Text(),"\n","",-1) == "価格(税抜)" {
 					price := sdt.Next().Text()
-					price = strings.Replace(price,"\n","",-1)
-					result.Price = price
+					priceStr := strings.Replace(price,"\n","",-1)
+					rep := regexp.MustCompile(`\d,\d\d\d円`)
+					price = string(rep.Find([]byte(priceStr)))
+					price = strings.Replace(price,",","",-1)
+					price = strings.Replace(price,"円","",-1)
+					result.Price, _ = strconv.Atoi(price)
 				}
 				if strings.Replace(sdt.Text(),"\n","",-1) == "発売日" {
 					releaseDate := sdt.Next().Text()
 					releaseDate = strings.Replace(releaseDate,"\n","",-1)
+					rep := regexp.MustCompile(`\d{4}年\d{1,2}月\d{1,2}日`)
+					releaseDate = string(rep.Find([]byte(releaseDate)))
 					result.ReleaseDate = releaseDate
 				}
 			})
