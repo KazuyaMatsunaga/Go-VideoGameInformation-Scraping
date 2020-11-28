@@ -34,65 +34,47 @@ func DetailScrape(URLs map[string]string) (interface{}, []error) {
 	var wg sync.WaitGroup
 	wg.Add(len(URLs))
 
-	// var wgContains sync.WaitGroup
-
 	results = make([]model.Detail, 0)
 	errorList := make([]error, 0)
 
 	limitCh := make(chan struct{}, len(URLs))
 	defer close(limitCh)
-
-	limitContainsCh := make(chan struct{}, 1)
-	defer close(limitContainsCh)
-	boolCh := make(chan bool)
-	defer close(boolCh)
-	indexCh := make(chan int)
-	defer close(indexCh)
-
-	keyCh := make(chan string, 2)
-	defer close(keyCh)	
-	resultCh := make(chan model.Detail, 2)
+	
+	resultCh := make(chan model.Detail, 2000)
 	defer close(resultCh)
-	errorCh := make(chan error)
+	errorCh := make(chan error, 2000)
 	defer close(errorCh)
-	resultListCh := make(chan []model.Detail)
-	defer close(resultListCh)
 	
 	for k, u := range URLs {
-		fmt.Printf("Address inside for-loop : %v %v \n", k, u)
-
 		key := k
 		url := u
 
 		limitCh <- struct{}{}
-		go RunScrape(limitCh, keyCh, &wg, key, url, resultCh, errorCh)
+		go RunScrape(limitCh, &wg, key, url, resultCh, errorCh)
 	}
 	wg.Wait()
 
 	L_result:
 		for {
-			if result, ok := <- resultCh; ok {
-				fmt.Printf("result : %v \n", result)
+			select{
+			case result := <- resultCh:
+				fmt.Printf("result : %v\n", result)
 				if b,i := titleContains(results.([]model.Detail), result.Title); b {
-					keyForCh := <- keyCh
-					results.([]model.Detail)[i].Platform = append(results.([]model.Detail)[i].Platform, keyForCh)
-					fmt.Print("Run case1\n")
+					results.([]model.Detail)[i].Platform = append(results.([]model.Detail)[i].Platform, result.Platform[0])
 				} else {
 					results = append(results.([]model.Detail), result)
-					<- keyCh
-					fmt.Print("Run case2\n")
 				}
-			} else {
-				fmt.Print("breakしたい\n")
+			default:
 				break L_result
 			}
 		}
 
 	L_err:
 		for {
-			if err, ok := <- errorCh; ok {
+			select{
+			case err := <- errorCh:
 				errorList = append(errorList, err)
-			} else {
+			default:
 				break L_err
 			}
 		}
@@ -100,15 +82,11 @@ func DetailScrape(URLs map[string]string) (interface{}, []error) {
 	return results, errorList
 }
 
-func RunScrape(limitCh chan struct{}, keyCh chan string, wg *sync.WaitGroup, k string, u string, resultCh chan model.Detail, errorCh chan error) {
+func RunScrape(limitCh chan struct{}, wg *sync.WaitGroup, k string, u string, resultCh chan model.Detail, errorCh chan error) {
 	defer wg.Done()
-	
-	fmt.Printf("Address inside goroutine : %v %v \n", k, u)
-	fmt.Printf("Address of receiver : %v %v \n", k, u)
 
 	doc, err := goquery.NewDocument(u)
 	if err != nil {
-			// fmt.Print("exit\n")
 			errorCh <- err
 			return
 	}
@@ -121,6 +99,7 @@ func RunScrape(limitCh chan struct{}, keyCh chan string, wg *sync.WaitGroup, k s
 		detailURL , exist := s.Attr("href")
 		if !(exist) {
 			errorCh <- fmt.Errorf("<a href> not found at ORDER %v at gameListTable in %v", i, u)
+			return
 		}
 
 		genres := strings.Split(strings.Replace(s.ParentFiltered("td").Next().Text(),"\n","",-1), "/")
@@ -137,18 +116,14 @@ func RunScrape(limitCh chan struct{}, keyCh chan string, wg *sync.WaitGroup, k s
 		detailURL = "https:" + detailURL
 		result.URL = detailURL
 
-		// fmt.Printf("%v of %v\n", k,detailURL)
-
 		detailDoc, err := goquery.NewDocument(detailURL)
 		if err != nil {
-			fmt.Print(detailURL)
-			fmt.Print("exit\n")
 			errorCh <- err
 			return
 		}
 		detailDoc.Find("h2[id]").Each(func(_ int, sd * goquery.Selection) {
 			var detailTable *goquery.Selection
-			if strings.Replace(sd.Text(),"\n","",-1) == "ペルソナ5 スクランブル ザ ファントム ストライカーズ" {
+			if strings.Replace(sd.Text(),"\n","",-1) == result.Title {
 				detailTable = sd.Next().Next()
 			} else {
 				return
@@ -166,22 +141,17 @@ func RunScrape(limitCh chan struct{}, keyCh chan string, wg *sync.WaitGroup, k s
 				}
 			})
 			result.Platform = append(result.Platform, k)
-			fmt.Printf("results of %v : %v\n", k, result)
 
-			keyCh <- k
 			resultCh <- result
 		})
 	})
-	fmt.Printf("End RunScrape of %v\n", k)
 	<-limitCh
 }
 
 func titleContains (d []model.Detail, t string) (bool, int) {
-	fmt.Print("Run titleContains\n")
 	index := 0
 
 	if len(d) != 0 {
-		fmt.Print("hoge\n")
 		for i, v := range d {
 			if v.Title == t {
 				index = i
