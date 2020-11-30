@@ -3,7 +3,7 @@ package model
 type Detail struct{
 	Title string
 	URL string
-	Price int
+	Price string
 	ReleaseDate string
 	Platform []string
 	Genre []string

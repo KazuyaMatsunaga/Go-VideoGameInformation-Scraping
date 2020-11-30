@@ -5,7 +5,6 @@ import (
 	"strings"
 	"regexp"
 	"sync"
-	"strconv"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/KazuyaMatsunaga/Go-VideoGameInformation-Scraping/pkg/model"
@@ -124,7 +123,7 @@ func RunScrape(limitCh chan struct{}, wg *sync.WaitGroup, k string, u string, re
 		}
 		detailDoc.Find("h2[id]").Each(func(_ int, sd * goquery.Selection) {
 			var detailTable *goquery.Selection
-			if strings.Replace(sd.Text(),"\n","",-1) == result.Title && result.Title == "ペルソナ5" {
+			if strings.Replace(sd.Text(),"\n","",-1) == result.Title {
 				detailTable = sd.Next().Next()
 			} else {
 				return
@@ -132,21 +131,36 @@ func RunScrape(limitCh chan struct{}, wg *sync.WaitGroup, k string, u string, re
 
 			detailTable = detailTable.Find("table")
 			detailTable.Find("td").Each(func(_ int, sdt * goquery.Selection) {
-				if strings.Replace(sdt.Text(),"\n","",-1) == "定価" || strings.Replace(sdt.Text(),"\n","",-1) == "定価(税込)" || strings.Replace(sdt.Text(),"\n","",-1) == "定価(税抜)" || strings.Replace(sdt.Text(),"\n","",-1) == "価格" || strings.Replace(sdt.Text(),"\n","",-1) == "価格(税込)" || strings.Replace(sdt.Text(),"\n","",-1) == "価格(税抜)" {
+				// TODO:条件文の可読性を向上させる
+				if strings.Replace(sdt.Text(),"\n","",-1) == "定価" || strings.Replace(sdt.Text(),"\n","",-1) == "定価(税込)" || strings.Replace(sdt.Text(),"\n","",-1) == "定価(税抜)" || strings.Replace(sdt.Text(),"\n","",-1) == "定価(税別)"  || strings.Replace(sdt.Text(),"\n","",-1) == "価格" || strings.Replace(sdt.Text(),"\n","",-1) == "価格(税込)"  || strings.Replace(sdt.Text(),"\n","",-1) == "価格(税抜)" || strings.Replace(sdt.Text(),"\n","",-1) == "価格(税別)" {
 					price := sdt.Next().Text()
-					priceStr := strings.Replace(price,"\n","",-1)
-					rep := regexp.MustCompile(`\d,\d\d\d円`)
-					price = string(rep.Find([]byte(priceStr)))
-					price = strings.Replace(price,",","",-1)
-					price = strings.Replace(price,"円","",-1)
-					result.Price, _ = strconv.Atoi(price)
-				}
+					if strings.Contains(price,"円") {
+						priceStr := strings.Replace(price,"\n","",-1)
+						rep := regexp.MustCompile(`\d,\d\d\d円`)
+						price = string(rep.Find([]byte(priceStr)))
+						result.Price = price
+					} else {
+						price = sdt.Next().Next().Text()
+						priceStr := strings.Replace(price,"\n","",-1)
+						rep := regexp.MustCompile(`\d,\d\d\d円`)
+						price = string(rep.Find([]byte(priceStr)))
+						result.Price = price
+					}	
+				} 
 				if strings.Replace(sdt.Text(),"\n","",-1) == "発売日" {
 					releaseDate := sdt.Next().Text()
-					releaseDate = strings.Replace(releaseDate,"\n","",-1)
-					rep := regexp.MustCompile(`\d{4}年\d{1,2}月\d{1,2}日`)
-					releaseDate = string(rep.Find([]byte(releaseDate)))
-					result.ReleaseDate = releaseDate
+					if strings.Contains(releaseDate,"年") && strings.Contains(releaseDate,"月") && strings.Contains(releaseDate,"日") {
+						releaseDate = strings.Replace(releaseDate,"\n","",-1)
+						rep := regexp.MustCompile(`\d{4}年\d{1,2}月\d{1,2}日`)
+						releaseDate = string(rep.Find([]byte(releaseDate)))
+						result.ReleaseDate = releaseDate
+					} else {
+						releaseDate = sdt.Next().Next().Text()
+						releaseDate = strings.Replace(releaseDate,"\n","",-1)
+						rep := regexp.MustCompile(`\d{4}年\d{1,2}月\d{1,2}日`)
+						releaseDate = string(rep.Find([]byte(releaseDate)))
+						result.ReleaseDate = releaseDate
+					}
 				}
 			})
 			result.Platform = append(result.Platform, k)
