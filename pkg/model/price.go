@@ -1,6 +1,6 @@
 package model
 
 type Price struct {
-	Price int
+	Price string
 	Platform string
 }
