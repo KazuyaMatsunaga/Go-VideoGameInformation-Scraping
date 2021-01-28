@@ -159,7 +159,7 @@ func RunScrape(limitCh chan struct{}, wg *sync.WaitGroup, k string, u string, re
 		}
 		detailDoc.Find("h2[id]").Each(func(_ int, sd * goquery.Selection) {
 			var detailTable *goquery.Selection
-			if strings.Replace(sd.Text(),"\n","",-1) == result.Title {
+			if strings.Replace(sd.Text(),"\n","",-1) == result.Title{
 				detailTable = sd.Next().Next()
 			} else {
 				return
