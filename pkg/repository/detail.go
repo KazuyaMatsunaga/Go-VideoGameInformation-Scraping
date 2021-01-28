@@ -183,20 +183,24 @@ func RunScrape(limitCh chan struct{}, wg *sync.WaitGroup, k string, u string, re
 								if priceStrPf != "" {
 									rep := regexp.MustCompile(`\d,\d\d\d円`)
 									price := string(rep.Find([]byte(priceStrPf)))
-									priceStrc := model.Price{price, v}
-									result.Price = append(result.Price, priceStrc)
-									if !(pfContains(result.Platform, v)) {
-										result.Platform = append(result.Platform, v)
+									if price != "" {
+										priceStrc := model.Price{v, price}
+										result.Price = append(result.Price, priceStrc)
+										if !(pfContains(result.Platform, v)){
+											result.Platform = append(result.Platform, v)
+										}
 									}
 								}
 							}
 						} else {
 							rep := regexp.MustCompile(`\d,\d\d\d円`)
 							price := string(rep.Find([]byte(priceStr)))
-							priceStrc := model.Price{price, k}
-							result.Price = append(result.Price, priceStrc)
-							if !(pfContains(result.Platform, k)) {
-								result.Platform = append(result.Platform, k)
+							if price != "" {
+								priceStrc := model.Price{k, price}
+								result.Price = append(result.Price, priceStrc)
+								if !(pfContains(result.Platform, k)) {
+									result.Platform = append(result.Platform, k)
+								}
 							}
 						}
 					} else {
@@ -206,10 +210,12 @@ func RunScrape(limitCh chan struct{}, wg *sync.WaitGroup, k string, u string, re
 								priceStr := strings.Replace(sdtNextText,"\n","",-1)
 								rep := regexp.MustCompile(`\d,\d\d\d円`)
 								price := string(rep.Find([]byte(priceStr)))
-								priceStrc := model.Price{price, v}
-								result.Price = append(result.Price, priceStrc)
-								if !(pfContains(result.Platform, v)) {
-									result.Platform = append(result.Platform, v)
+								if price != "" {
+									priceStrc := model.Price{v, price}
+									result.Price = append(result.Price, priceStrc)
+									if !(pfContains(result.Platform, v)) {
+										result.Platform = append(result.Platform, v)
+									}
 								}
 							}
 						}
@@ -230,20 +236,24 @@ func RunScrape(limitCh chan struct{}, wg *sync.WaitGroup, k string, u string, re
 								if rDStrpf != "" {
 									rep := regexp.MustCompile(`\d{4}年\d{1,2}月\d{1,2}日`)
 									releaseDate := string(rep.Find([]byte(rDStrpf)))
-									rDStrc := model.ReleaseDate{releaseDate, v}
-									result.ReleaseDate = append(result.ReleaseDate, rDStrc)
-									if !(pfContains(result.Platform, v)) {
-										result.Platform = append(result.Platform, v)
+									if releaseDate != "" {
+										rDStrc := model.ReleaseDate{v, releaseDate}
+										result.ReleaseDate = append(result.ReleaseDate, rDStrc)
+										if !(pfContains(result.Platform, v)) {
+											result.Platform = append(result.Platform, v)
+										}
 									}
 								}
 							}
 						} else {
 							rep := regexp.MustCompile(`\d{4}年\d{1,2}月\d{1,2}日`)
 							releaseDate := string(rep.Find([]byte(releaseDateStr)))
-							rDStrc := model.ReleaseDate{releaseDate, k}
-							result.ReleaseDate = append(result.ReleaseDate, rDStrc)
-							if !(pfContains(result.Platform, k)) {
-								result.Platform = append(result.Platform, k)
+							if releaseDate != "" {
+								rDStrc := model.ReleaseDate{k, releaseDate}
+								result.ReleaseDate = append(result.ReleaseDate, rDStrc)
+								if !(pfContains(result.Platform, k)) {
+									result.Platform = append(result.Platform, k)
+								}
 							}
 						}
 					} else {
@@ -253,11 +263,13 @@ func RunScrape(limitCh chan struct{}, wg *sync.WaitGroup, k string, u string, re
 								releaseDateStr := strings.Replace(sdtNextText,"\n","",-1)
 								rep := regexp.MustCompile(`\d{4}年\d{1,2}月\d{1,2}日`)
 								releaseDate := string(rep.Find([]byte(releaseDateStr)))
-								rDStrc := model.ReleaseDate{releaseDate, v}
-								result.ReleaseDate = append(result.ReleaseDate, rDStrc)
-								result.Platform = append(result.Platform, v)
-								if !(pfContains(result.Platform, v)) {
+								if releaseDate != "" {
+									rDStrc := model.ReleaseDate{v, releaseDate}
+									result.ReleaseDate = append(result.ReleaseDate, rDStrc)
 									result.Platform = append(result.Platform, v)
+									if !(pfContains(result.Platform, v)) {
+										result.Platform = append(result.Platform, v)
+									}
 								}
 							}
 						}

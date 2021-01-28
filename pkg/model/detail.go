@@ -7,5 +7,5 @@ type Detail struct{
 	Price []Price
 	ReleaseDate []ReleaseDate
 	Genre []string
-	PackageImgURL string
+	PackageImg []PkgImg
 }
