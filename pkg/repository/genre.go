@@ -60,8 +60,8 @@ func GenreScrape(URL string) (interface{}, []error) {
 			result.Name = strings.Replace(s.Next().Text(),"\n","",-1)
 			
 			// RTS:リアルタイムストラテジー(*2) 用
-			if c := strings.Contains(result.Name,"(*2)"); c {
-				result.Name = strings.Replace(result.Name,"(*2)","",-1) // (*2)を取り除く
+			if c := strings.Contains(result.Name,"(*1)"); c {
+				result.Name = strings.Replace(result.Name,"(*1)","",-1) // (*2)を取り除く
 			}
 			results = append(results.([]model.Genre), result)
 		}
